@@ -1,3 +1,8 @@
+# autosave files
+*~
+\#*#
+
+# ignored ruby files
 *.gem
 *.rbc
 /.config
