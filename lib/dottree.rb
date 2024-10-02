@@ -70,9 +70,11 @@ HERE
     end
   end
 
-  Edge = Struct.new(:nodes) do
+  Edge = Struct.new(:nodes, :attr) do
     def to_s
-      "#{nodes.join(' -> ')};"
+      attributes = []
+      attr.each {|k,v| attributes << "#{k.to_s}=\"#{v.to_s}\"" } unless attr.nil?
+      "#{nodes.join(' -> ')} [ #{attributes.join(', ')} ];"
     end
   end
 
