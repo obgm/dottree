@@ -4,11 +4,11 @@ require 'open3'
 
 module Tree
 
-  class Tree < Struct.new(:structure, :globalattrs, :nodeattrs)
-    def initialize(structure = [], globalattrs = {}, nodeattrs = {})
+  class Tree < Struct.new(:structure, :globalattrs, :nodeattrs, :edgeattrs)
+    def initialize(structure = [], globalattrs = {}, nodeattrs = {}, edgeattrs = {})
       # set default attributes
       globalattrs[:fontname] ||= 'Palatino'
-      globalattrs[:fontsize] ||= 14;
+      globalattrs[:fontsize] ||= 14
 
       nodeattrs[:fontname] ||= globalattrs[:fontname]
       nodeattrs[:fontsize] ||= globalattrs[:fontsize]
@@ -16,7 +16,10 @@ module Tree
       nodeattrs[:style] ||= 'filled'
       nodeattrs[:fillcolor] ||= 'lightblue'
 
-      super(structure, globalattrs, nodeattrs)
+      edgeattrs[:arrowsize] ||= 0.6
+      edgeattrs[:arrowhead] ||= 'vee'
+
+      super(structure, globalattrs, nodeattrs, edgeattrs)
     end
 
     def to_s
@@ -26,8 +29,11 @@ module Tree
       nodespecific = []
       nodeattrs.each {|k,v| nodespecific << "#{k.to_s}=\"#{v.to_s}\"" }
 
-      # Sort structure to cluster nodes with the same ancestor node in
-      # a subgraph with attribute rank=same; The edges are put to the
+      edgespecific = []
+      edgeattrs.each {|k,v| edgespecific << "#{k.to_s}=\"#{v.to_s}\"" }
+
+      # Sort structure to cluster nodes with the same ancestor node
+      # in a subgraph with attribute rank=same; The edges are put to the
       # bottom of the graph.
       ranks = Hash.new { |hash, key| hash[key] = [] }
       nodes = structure.flatten.filter {|elem| elem.is_a?(Node)}.each do |node|
@@ -50,6 +56,7 @@ module Tree
 digraph Tree {
     graph [#{globals.join(', ') }];
     node [#{nodespecific.join(', ') }];
+    edge [#{edgespecific.join(', ') }];
     stylesheet="svgstyle.css";
     #{ranked(ranks)}
     #{edges.map {|n| n.to_s}.join("\n")}
