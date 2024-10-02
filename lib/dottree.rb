@@ -26,12 +26,33 @@ module Tree
       nodespecific = []
       nodeattrs.each {|k,v| nodespecific << "#{k.to_s}=\"#{v.to_s}\"" }
 
+      # Sort structure to cluster nodes with the same ancestor node in
+      # a subgraph with attribute rank=same; The edges are put to the
+      # bottom of the graph.
+      ranks = Hash.new { |hash, key| hash[key] = [] }
+      nodes = structure.flatten.filter {|elem| elem.is_a?(Node)}.each do |node|
+        ranks[node.rank] << node
+      end
+      edges = structure.flatten.filter {|elem| elem.is_a?(Edge)}
+
+      def ranked(r)
+        r.map do |rank, nodelist|
+          nodes = nodelist.map {|n| n.to_s}.join("\n")
+          if rank > 0
+            "{ rank=same;\n#{nodes}\n}"
+          else
+            nodes
+          end
+        end.join("\n")
+      end
+
 <<-HERE
 digraph Tree {
     graph [#{globals.join(', ') }];
     node [#{nodespecific.join(', ') }];
     stylesheet="svgstyle.css";
-    #{structure.flatten.map {|n| n.to_s}.join("\n")}
+    #{ranked(ranks)}
+    #{edges.map {|n| n.to_s}.join("\n")}
 }
 HERE
     end
@@ -62,7 +83,11 @@ HERE
     end
   end
 
-  Node = Struct.new(:id, :attr) do
+  class Node < Struct.new(:id, :attr, :rank)
+    def initialize(id, attr = {}, rank = 0)
+      super(id, attr, rank)
+    end
+
     def to_s
       attributes = []
       attr.each {|k,v| attributes << "#{k.to_s}=\"#{v.to_s}\"" }
@@ -81,9 +106,9 @@ HERE
 end # module Tree
 
 if __FILE__ == $0
-  puts Tree::Tree.new([Tree::Node.new(:root, { label: 'A'} ),
-                       Tree::Node.new(:left, { label: 'B'} ),
-                       Tree::Node.new(:right, { label: 'C', fillcolor: :yellow } ),
+  puts Tree::Tree.new([Tree::Node.new(:root, { label: 'A'}),
+                       Tree::Node.new(:left, { label: 'B'}, 1),
+                       Tree::Node.new(:right, { label: 'C', fillcolor: :yellow }, 1),
                        Tree::Edge.new([:root, :left]),
                        Tree::Edge.new([:root, :right])],
                       { fontname: 'Deja Vu Sans', fontsize: 12 }).to_svg
